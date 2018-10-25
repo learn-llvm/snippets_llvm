@@ -1,0 +1,127 @@
+#include "DbgInfo.hpp"
+#include "Version.hpp"
+
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Metadata.h"
+
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 5)
+#include "llvm/IR/DebugInfo.h"
+#else
+#include "llvm/DebugInfo.h"
+#endif
+
+#include "llvm/Support/raw_ostream.h"
+#include <string>
+
+using namespace llvm;
+
+namespace llvm {
+namespace dbg {
+/// GlobalVariable => DIGlobalVariable
+Value *findDbgGlobalDeclare(GlobalVariable *V) {
+  NamedMDNode *NMD = V->getParent()->getNamedMetadata("llvm.dbg.gv");
+  if (!NMD) return nullptr;
+  for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i) {
+    DIDescriptor DIG(cast<MDNode>(NMD->getOperand(i)));
+    if (!DIG.isGlobalVariable()) continue;
+    if (DIGlobalVariable(DIG).getGlobal() == V) return DIG;
+  }
+  return nullptr;
+}
+
+/// Instruction => DbgDeclareInst
+/// TODO verify whether also Argument => DbgDeclareInst possible?
+DbgDeclareInst const *findDbgDeclare(Value const *V) {
+  V = V->stripPointerCasts();
+  Instruction const *I = dyn_cast<Instruction>(V);
+  if (I == nullptr) return nullptr;
+  Function const *F = I->getParent()->getParent();
+  /// REVIEW verify entryBlock is enough for llvm-gcc/clang frontend
+  BasicBlock const &B = F->getEntryBlock();
+  for (Instruction const &I : B) {
+    if (DbgDeclareInst const *DDI = dyn_cast<DbgDeclareInst>(&I)) {
+      if (DDI->getAddress() == V) return DDI;
+    }
+  }
+  return nullptr;
+}
+
+bool getDbgDeclareInfo(const Value *V, std::string &DisplayName,
+                       unsigned &LineNo) {
+  /// GlobalVariable
+  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(const_cast<Value *>(V))) {
+    Value *DIGV = findDbgGlobalDeclare(GV);
+    if (!DIGV) return false;
+    DIGlobalVariable Var(cast<MDNode>(DIGV));
+    StringRef D = Var.getDisplayName();
+    DisplayName = D;
+    LineNo = Var.getLineNumber();
+  } else {  /// Instruction
+    DbgDeclareInst const *DDI = findDbgDeclare(V);
+    if (DDI == nullptr) return false;
+    DIVariable Var(DDI->getVariable());
+    DisplayName = Var.getName();
+    LineNo = Var.getLineNumber();
+  }
+  return true;
+}
+
+std::string getLocalVarName(Instruction const *ins) {
+  DbgDeclareInst const *DDI = findDbgDeclare(ins);
+  if (DDI == nullptr) return "";
+  DIVariable Var(DDI->getVariable());
+  return Var.getName();
+}
+
+unsigned getSrcLineFromDeclare(DbgDeclareInst const *DDI) {
+  return DIVariable(DDI->getVariable()).getLineNumber();
+}
+
+std::string getNameFromDeclare(DbgDeclareInst const *DDI) {
+  return DIVariable(DDI->getVariable()).getName();
+}
+
+bool getVarDeclMap(Function &F, VarDeclMap &varDeclMap) {
+  if (F.isDeclaration()) return false;
+  BasicBlock &B = F.front();
+  std::string displayName;
+  unsigned lineNo;
+  for (Instruction &I : B) {
+    if (getDbgDeclareInfo(&I, displayName, lineNo)) {
+      varDeclMap.insert(
+          VarDeclMap::value_type(&I, VarInfo(displayName, lineNo)));
+    }
+  }
+  return false;
+}
+
+bool getVarDeclMap(BasicBlock &B, VarDeclMap &varDeclMap) {
+  return getVarDeclMap(*B.getParent(), varDeclMap);
+}
+
+bool getGlobalDeclMap(Module const &M, VarDeclMap &gvLocMap) {
+  NamedMDNode *gv = M.getNamedMetadata("llvm.dbg.gv");
+  if (!gv) return false;
+  for (unsigned i = 0; i != gv->getNumOperands(); ++i) {
+    const MDNode *node = gv->getOperand(i);
+    DIGlobalVariable digv(node);
+    if (!digv) continue;
+    gvLocMap.insert(VarDeclMap::value_type(
+        digv.getGlobal(),
+        VarInfo(digv.getDisplayName(), digv.getLineNumber())));
+  }
+  return true;
+}
+
+unsigned getLineNum(Instruction const *inst) {
+  DebugLoc dbgLoc(inst->getDebugLoc());
+  if (dbgLoc.isUnknown()) {
+    errs() << "no debug loc for [" << *inst << "]\n";
+  }
+  return dbgLoc.getLine();
+}
+
+}  /// namespace llvm::dbg
+}  /// namespace llvm

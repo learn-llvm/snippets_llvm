@@ -1,0 +1,6 @@
+digraph {
+        entry -> while_cond;
+        while_cond -> while_body[label="yes"];
+        while_cond -> exit;
+        while_body -> while_cond[label="no"];
+}

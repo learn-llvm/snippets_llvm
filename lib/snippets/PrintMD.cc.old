@@ -1,0 +1,94 @@
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Instructions.h>
+
+#include <llvm/Pass.h>
+#include <llvm/ADT/DenseMap.h>
+#include <llvm/Support/raw_ostream.h>
+
+#include "Logging.hpp"
+#include "Version.hpp"
+
+/// 2 kinds of metadata:
+// NMDNode -- list of other MDNode
+// unamed MDNode
+
+/// different kinds of metadata
+/// - compile unit descriptor : llvm.dbg.cu  -- used when debugging
+/// - globalvariable descriptor
+/// - basic type descriptor
+/// - derived type descriptor
+
+/// @see
+/// http://weaponshot.wordpress.com/2012/05/06/extract-all-the-metadata-nodes-in-llvm/
+
+using namespace llvm;
+
+namespace llvm {
+namespace snippets {
+struct PrintMD : public ModulePass {
+  typedef DenseMap<const MDNode *, unsigned> MDNMap;
+  MDNMap mdnMap_;
+  unsigned mdnNext_;
+
+  static char ID;
+  PrintMD() : ModulePass(ID), mdnNext_(0) {}
+  bool runOnModule(Module &M) override {
+    for (auto &F : M) {
+      getAllMDNFunc(F);
+    }
+    for (auto &mdnEntity : mdnMap_) {
+      errs() << mdnEntity.second << " ";
+      WITH_COLOR(raw_ostream::RED, errs() << *mdnEntity.first << "\n");
+    }
+    return false;
+  }
+
+  void getAllMDNFunc(Function &F) {
+    SmallVector<std::pair<unsigned, MDNode *>, 4> MDForInst;
+    /// intrinsic functions such as llvm.dbg.declare)
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        if (auto *CI = dyn_cast<CallInst>(&I)) {
+          if (auto *F = CI->getCalledFunction()) {
+            if (!F->isIntrinsic()) continue;
+            for (auto i = 0u, e = I.getNumOperands(); i != e; ++i) {
+              if (auto *N = dyn_cast_or_null<MDNode>(I.getOperand(i))) {
+                createMetadataSlot(N);
+              }
+            }
+          }
+        }
+
+        // Get all the mdnodes attached to each instruction
+        I.getAllMetadata(MDForInst);
+
+        for (unsigned i = 0, e = MDForInst.size(); i != e; ++i) {
+          createMetadataSlot(MDForInst[i].second);
+        }
+        MDForInst.clear();
+      }
+    }
+  }  // end getAllMDNFunc()
+
+  /// recursively; track the number of being traversed
+  void createMetadataSlot(MDNode *N) {
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 5)
+#else
+    if (!N->isFunctionLocal()) {
+      if (mdnMap_.find(N) != mdnMap_.end()) return;
+      mdnMap_[N] = ++mdnNext_;
+    }
+
+    for (auto i = 0u, e = N->getNumOperands(); i != e; ++i) {
+      if (auto *Op = dyn_cast_or_null<MDNode>(N->getOperand(i))) {
+        createMetadataSlot(Op);
+      }
+    }
+#endif
+  }
+};
+}
+}
+
+char snippets::PrintMD::ID = 0;
+static RegisterPass<snippets::PrintMD> X("PrintMD", "PrintMD");

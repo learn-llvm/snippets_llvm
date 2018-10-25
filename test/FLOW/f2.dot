@@ -1,0 +1,8 @@
+digraph {
+        entry -> ph;
+        entry -> exit;
+        ph -> loop_ph;
+        loop_ph -> critical;
+        critical -> loop_ph[label="no"];
+        critical -> exit[label="yes"];
+}

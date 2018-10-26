@@ -33,7 +33,7 @@ struct yaml::SequenceTraits<std::vector<Person>> {
   }
 };
 
-int main(void) {
+int main() {
   Person p1("hello", 1);
   Person p2("world");
   std::vector<Person> persons;

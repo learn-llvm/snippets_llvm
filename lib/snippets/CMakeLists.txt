@@ -1,7 +1,13 @@
-file(GLOB TEST_FILES *.cc dataflow/*.cc)
-
 PROJECT(snippets)
-add_library(${PROJECT_NAME} SHARED
-  ${TEST_FILES}
-  )
-target_link_libraries(${PROJECT_NAME} mybase)
+
+add_llvm_loadable_module(countbb CountBB.cc)
+add_llvm_loadable_module(cfgpath PrintCFGPath.cc)
+add_llvm_loadable_module(localopt LocalOpts.cc)
+add_llvm_loadable_module(fnty TestFnTy.cc)
+add_llvm_loadable_module(gep TestGEP.cc)
+add_llvm_loadable_module(globalalias TestGlobalAlias.cc)
+add_llvm_loadable_module(globalvalue TestGlobalValue.cc)
+add_llvm_loadable_module(of TestOF.cc)
+add_llvm_loadable_module(user TestUser.cc)
+add_llvm_loadable_module(addtrace TransAddMTrace.cc)
+add_llvm_loadable_module(prepare TransPrepareFunc.cc)

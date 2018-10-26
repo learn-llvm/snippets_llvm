@@ -22,7 +22,7 @@ struct TestOF final : public FunctionPass {
     for (auto &B : F) {
       for (auto &I : B) {
         printInstArgType(I);
-        if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I)) {
+        if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
           errs() << "inst: " << *II << "\n";
           logging::printTypeInfo(II->getType());
         }
@@ -53,7 +53,6 @@ struct TestOF final : public FunctionPass {
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesAll();
-    AU.addRequired<PostDominatorTree>();
   }
 };
 

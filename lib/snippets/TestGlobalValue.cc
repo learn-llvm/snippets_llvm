@@ -19,7 +19,7 @@ struct TestGlobalValue final : public ModulePass {
 
   TestGlobalValue() : ModulePass(ID) {}
 
-  bool runOnModule(Module &M) {
+  bool runOnModule(Module &M) override {
     errs() << getPassName() << " ID:" << getPassID() << "\n";
     dumpPassKind(getPassKind());
     dumpPassStructure();
@@ -35,7 +35,7 @@ struct TestGlobalValue final : public ModulePass {
     return false;
   }
 
-  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesAll();
   }
 };

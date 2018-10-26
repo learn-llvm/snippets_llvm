@@ -6,7 +6,6 @@
 #include "llvm/Pass.h"
 
 #include "Logging.hh"
-#include "Version.hh"
 
 using namespace llvm;
 void dumpLinkageType(GlobalValue &GV);

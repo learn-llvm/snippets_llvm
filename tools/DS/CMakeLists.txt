@@ -1,8 +1,3 @@
-get_filename_component(PROJECTID ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-string(REPLACE " " "_" PROJECTID ${PROJECTID})
-project(${PROJECTID})
-
-file(GLOB SRC_FILES *.cc)
-set(EXECUTABLE_NAME "${PROJECTID}.out")
-add_executable(${EXECUTABLE_NAME} ${SRC_FILES})
-target_link_libraries(${EXECUTABLE_NAME} ${FULL_LLVM_LIBS})
+llvm_map_components_to_libnames(llvm_libs bitwriter core ipo irreader instcombine instrumentation target linker analysis scalaropts support)
+add_executable(ds DS.cc)
+target_link_libraries(ds ${llvm_libs} mybase)

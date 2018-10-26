@@ -1,20 +1,12 @@
 #define DEBUG_TYPE "TestFnTy"
+
 #include "llvm/Support/Debug.h"
 
-#include "Version.hh"
-#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/InstIterator.h"
-#else
-#include "llvm/Function.h"
-#include "llvm/IR/Module"
-#include "llvm/BasicBlock.h"
-#include "llvm/IR/InstIterator.h"
-#include "llvm/Instructions.h"
-#endif
 
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
@@ -24,35 +16,36 @@
 using namespace llvm;
 
 struct TestFnTy final : public ModulePass {
-  static char ID;
-  TestFnTy() : ModulePass(ID) {}
+    static char ID;
 
-  void dumpFnTy(Function &F) {
-    errs() << F.getName() << "\n";
-    FunctionType *fnTy = F.getFunctionType();
-    logging::printTypeInfo(fnTy);
-    errs() << "no. of param types: " << fnTy->getNumParams()
-           << "\nparameter typs:\n";
-    for (auto *ty : fnTy->params()) {
-      logging::printTypeInfo(ty);
+    TestFnTy() : ModulePass(ID) {}
+
+    void dumpFnTy(Function &F) {
+        errs() << F.getName() << "\n";
+        FunctionType *fnTy = F.getFunctionType();
+        logging::printTypeInfo(fnTy);
+        errs() << "no. of param types: " << fnTy->getNumParams()
+               << "\nparameter typs:\n";
+        for (auto *ty : fnTy->params()) {
+            logging::printTypeInfo(ty);
+        }
+        errs() << "\n";
     }
-    errs() << "\n";
-  }
 
-  void getSymbolTable(Module &M) {
-    ValueSymbolTable &symtbl = M.getValueSymbolTable();
-  }
-
-  bool runOnModule(Module &M) override {
-    for (auto &F : M) {
-      dumpFnTy(F);
+    void getSymbolTable(Module &M) {
+        ValueSymbolTable &symtbl = M.getValueSymbolTable();
     }
-    return false;
-  }
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.setPreservesAll();
-  }
+    bool runOnModule(Module &M) override {
+        for (auto &F : M) {
+            dumpFnTy(F);
+        }
+        return false;
+    }
+
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+        AU.setPreservesAll();
+    }
 };
 
 char TestFnTy::ID = 0;

@@ -56,7 +56,10 @@ public:
 
     double computeArea() const override { return PI * radius_ * radius_; }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
     static bool classof(Shape const *S) { return S->getKind() == SK_Circle; }
+#pragma clang diagnostic pop
 
     friend std::ostream &operator<<(std::ostream &os, Circle const &circle) {
         os << "circle, radius_=" << circle.radius_

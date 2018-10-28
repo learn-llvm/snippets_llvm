@@ -14,8 +14,8 @@
 
 #include "LLUtils.hh"
 
-#include <vector>
 #include <LLDump.hh>
+#include <vector>
 
 using namespace llvm;
 
@@ -32,7 +32,7 @@ void create_atexitCall(Function &F, GlobalVariable *BBCounter) {
       TypeBuilder<int(char *, ...), false>::get(M.getContext());
   auto *printfFn = cast<Function>(M.getOrInsertFunction("printf", funTy));
   auto bbValue = new LoadInst(BBCounter, "bbValue", entryBB);
-  Constant *fmt = utils::geti8StrVal(M, "%d Executed\n", "fmt");
+  Constant *fmt = utils::geti8StrVal(M, "%d BB(s) Executed\n", "fmt");
   ArrayRef<Value *> printfArgs{fmt, bbValue};
   CallInst::Create(printfFn, printfArgs, "", entryBB);
   ReturnInst::Create(ctx, entryBB);
@@ -59,7 +59,6 @@ static RegisterPass<CountBBPass> X("count-bb",
                                    false);
 
 /// -------------------------------------------------------------------------
-/// ///
 
 bool CountBBPass::setup(Module &M) {
   auto *Main = M.getFunction("main");
@@ -79,7 +78,7 @@ bool CountBBPass::setup(Module &M) {
       k_atexitCallStr, TypeBuilder<void(void), false>::get(M.getContext())));
 
   auto atexit_attr =
-      AttributeList().addAttribute(M.getContext(), 0, Attribute::NoUnwind);
+      AttributeList().addAttribute(M.getContext(), ~0U, Attribute::NoUnwind);
   auto *atexitFn = cast<Function>(M.getOrInsertFunction(
       "atexit", TypeBuilder<int(void(void)), false>::get(M.getContext()),
       atexit_attr));
@@ -109,17 +108,13 @@ bool CountBBPass::runOnBasicBlock(BasicBlock &BB, Module &M) {
 }
 
 bool CountBBPass::runOnModule(Module &M) {
-
   dumpPassKind(this->getPassKind());
   errs() << this->getPassName() << " ID:" << this->getPassID() << "\n";
-  this->dumpPassStructure();
 
   setup(M);
   for (auto &F : M) {
-    if (F.getName() == k_atexitCallStr)
-      continue;
-    for (auto &B : F)
-      runOnBasicBlock(B, M);
+    if (F.getName() == k_atexitCallStr) continue;
+    for (auto &B : F) runOnBasicBlock(B, M);
   }
   return true;
 }

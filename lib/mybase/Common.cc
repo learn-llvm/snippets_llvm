@@ -6,9 +6,8 @@ std::shared_ptr<char> cppDemangle(const char *abiName) {
 
   /* NOTE: must free() the returned char when done with it! */
   std::shared_ptr<char> retval;
-  retval.reset((char *) ret, [](char *mem) {
-    if (mem)
-      free((void *) mem);
+  retval.reset(ret, [](char *mem) {
+    if (mem) free((void *)mem);
   });
   return retval;
 }

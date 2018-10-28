@@ -8,6 +8,7 @@
 #include <string>
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace llvm;
 
@@ -32,8 +33,9 @@ struct yaml::SequenceTraits<std::vector<Person>> {
   }
   static Person &element(yaml::IO &, std::vector<Person> &persons,
                          size_t index) {
-    if (index >= persons.size())
-      assert(0 && "out of bound");
+    if (index >= persons.size()) {
+      report_fatal_error("out of bound", true);
+    }
     return persons[index];
   }
 };

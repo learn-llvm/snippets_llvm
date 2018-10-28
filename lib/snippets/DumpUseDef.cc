@@ -55,24 +55,13 @@ struct DumpUseDef final : public ModulePass {
     }
   }
 
-  bool runOnFunction(Function &F) { return false; }
-
-  void specialUse(Module &M) {
-    GlobalVariable *GV = nullptr;
-    for (auto gvb = M.global_begin(), gve = M.global_end(); gvb != gve; ++gvb) {
-      if ((*gvb).getName() == "my_global_v") {
-        GV = &*(gvb);
-      }
-    }
-    Function &mainFn = *M.getFunction("main");
-    for (auto &B : mainFn) {
-      errs() << B.getName() << "\tuses " << GV->getName() << "? "
-             << GV->isUsedInBasicBlock(&B) << "\n";
-    }
-  }
-
   bool runOnModule(Module &M) override {
-    specialUse(M);
+    for (auto &F : M) {
+      if (F.isDeclaration()) {
+        continue;
+      }
+      dumpAllUsesInFunc(F);
+    }
     return false;
   }
 

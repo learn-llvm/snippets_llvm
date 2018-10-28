@@ -1,8 +1,16 @@
 project(mybase)
-add_llvm_library(${PROJECT_NAME}
+set(BASE_SOURCES
         LLUtils.cc
         Common.cc
         LLDump.cc)
-llvm_map_components_to_libnames(llvm_libs bitwriter core ipo irreader instcombine instrumentation target linker analysis scalaropts support
-        x86asmparser x86asmprinter x86codegen x86desc x86disassembler x86info)
-target_link_libraries(${PROJECT_NAME} ${llvm_libs})
+add_llvm_library(${PROJECT_NAME}
+        ${BASE_SOURCES}
+        )
+target_link_libraries(${PROJECT_NAME})
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+#
+## used for opt loaded plugin (PIC)
+#add_library(mybase_load
+#        ${BASE_SOURCES})
+#set_property(TARGET mybase_load PROPERTY POSITION_INDEPENDENT_CODE ON)

@@ -1,3 +1,4 @@
+#include <llvm/IR/IntrinsicInst.h>
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instructions.h"
@@ -11,40 +12,53 @@
 
 #include "llvm/IR/CFG.h"
 
-#include "LLUtils.hh"
 #include "Common.hh"
 #include "LLDump.hh"
+#include "LLUtils.hh"
 
 using namespace llvm;
-
-template<typename T>
-static std::string ToString(const T *obj) {
-  std::string TypeName;
-  raw_string_ostream N(TypeName);
-  obj->print(N);
-  return N.str();
-}
 
 struct DumpModulePass : public ModulePass {
   static char ID;
 
   DumpModulePass() : ModulePass(ID) {}
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
+  void getAnalysisUsage(AnalysisUsage &AU) const override {}
+
+  void printInstArgType(Instruction &I) {
+    errs() << "\nInstruction: " << I << "\n";
+    Type *instTy = I.getType();
+    if (instTy->isPointerTy()) {
+      errs() << "POINT ";
+      instTy = dyn_cast<PointerType>(instTy)->getElementType();
+    }
+    printTypeInfo(instTy);
+    for (auto &arg : I.operands()) {
+      Type *ty = arg->getType();
+      if (ty->isPointerTy()) {
+        errs() << "POINT ";
+        ty = dyn_cast<PointerType>(ty)->getElementType();
+      }
+      printTypeInfo(ty);
+    }
   }
 
-  bool runOnBasicBlock(BasicBlock &bb, DataLayout const &dataLayout) {
+  bool runOnBasicBlock(BasicBlock &B, DataLayout const &dataLayout) {
     WITH_COLOR(raw_ostream::CYAN,
-               errs() << "---> BB (in " << bb.getParent()->getName() << "): " << ppName(bb.getName()) << "\n";);
-    for (auto &inst : bb) {
-      errs() << CLASS_NAME(&inst) << inst << "\n";
+               errs() << "---> BB (in " << B.getParent()->getName()
+                      << "): " << ppName(B.getName()) << "\n";);
+    for (auto &inst : B) {
+      errs() << CLASS_NAME(inst) << inst << "\n";
       if (auto *allocaInst = dyn_cast<AllocaInst>(&inst)) {
         auto *allocType = allocaInst->getAllocatedType();
-        errs() << CLASS_NAME(allocaInst) << " type: " << ToString(allocType) << " allocSize="
-               << dataLayout.getTypeSizeInBits(allocType) << " bits\n";
+        errs() << CLASS_NAME(allocaInst) << " type: " << ToString(allocType)
+               << " allocSize=" << dataLayout.getTypeSizeInBits(allocType)
+               << " bits\n";
       } else if (auto *gep = dyn_cast<GetElementPtrInst>(&inst)) {
-        errs() << CLASS_NAME(gep) << " type: " << ToString(gep->getType()) << "\n";
-        errs() << "  pointer operand: " << ToString(gep->getPointerOperand()) << "\n";
+        errs() << CLASS_NAME(gep) << " type: " << ToString(gep->getType())
+               << "\n";
+        errs() << "  pointer operand: " << ToString(gep->getPointerOperand())
+               << "\n";
         errs() << "  Indices: ";
         for (auto Idx = gep->idx_begin(), IdxE = gep->idx_end(); Idx != IdxE;
              ++Idx) {
@@ -67,7 +81,39 @@ struct DumpModulePass : public ModulePass {
     }
     Function *callee = callInst->getCalledFunction();
     if (callee != nullptr) {
-      errs() << "callee: " << callee->getName() << "\tisIntrinsic: " << callee->isIntrinsic() << "\n";
+      errs() << "callee: " << callee->getName() << "\t";
+      if (auto *ii = dyn_cast<IntrinsicInst>(callInst)) {
+        if (auto *cfpi = dyn_cast<ConstrainedFPIntrinsic>(ii)) {
+          errs() << "constrainedFPIntrinsic"
+                 << "\n";
+        } else if (auto *dbgii = dyn_cast<DbgInfoIntrinsic>(ii)) {
+          errs() << "DbgInfo\n";
+        } else if (auto *vci = dyn_cast<VACopyInst>(ii)) {
+          errs() << "va_copy\n";
+        } else if (auto *vei = dyn_cast<VAEndInst>(ii)) {
+          errs() << "va_end\n";
+        } else if (auto *vsi = dyn_cast<VAStartInst>(ii)) {
+          errs() << "va_start\n";
+        } else if (auto *memset = dyn_cast<MemSetInst>(ii)) {
+          errs() << "memset\n";
+        } else if (auto *memcpy = dyn_cast<MemCpyInst>(ii)) {
+          errs() << "memcpy\n";
+        } else if (auto *memmove = dyn_cast<MemMoveInst>(ii)) {
+          errs() << "memmove\n";
+        } else if (auto *atomic_memcpy = dyn_cast<AtomicMemCpyInst>(ii)) {
+          errs() << "automic_memcpy\n";
+        } else if (auto *atomic_memmove = dyn_cast<AtomicMemMoveInst>(ii)) {
+          errs() << "automic_memmove\n";
+        } else if (auto *any_memcpy = dyn_cast<AnyMemCpyInst>(ii)) {
+          errs() << "any_memcpy\n";
+        } else if (auto *any_memmove = dyn_cast<AnyMemMoveInst>(ii)) {
+          errs() << "any_memmove\n";
+        } else {
+          errs() << "Untracked IntrinsicInst\n";
+        }
+      } else {
+        errs() << "\n";
+      }
     }
   }
 
@@ -75,14 +121,11 @@ struct DumpModulePass : public ModulePass {
     errs() << "\ninline asm: " << *ia << "\n";
     errs() << "asm string: ";
     errs().write_escaped(ia->getAsmString());
-    errs() << "\nconstraint string: " << ia->getConstraintString()
-           << "\n";
+    errs() << "\nconstraint string: " << ia->getConstraintString() << "\n";
     errs() << "hasSideEffects: " << ia->hasSideEffects() << "\n";
     errs() << "isAlignStack: " << ia->isAlignStack() << "\n";
     errs() << "dialect: "
-           << (ia->getDialect() == InlineAsm::AD_ATT ? "att"
-                                                     : "intel")
-           << "\n";
+           << (ia->getDialect() == InlineAsm::AD_ATT ? "att" : "intel") << "\n";
     errs() << "Type: " << ia->getType();
     errs() << "\n";
     errs() << "split asm string...\n";
@@ -105,7 +148,8 @@ struct DumpModulePass : public ModulePass {
   }
 
   void _dump_PHINode(PHINode *phi) {
-    errs() << CLASS_NAME(phi) << " incoming: " << phi->getNumIncomingValues() << "\n";
+    errs() << CLASS_NAME(phi) << " incoming: " << phi->getNumIncomingValues()
+           << "\n";
     BasicBlock *B = phi->getParent();
     for (auto pred = pred_begin(B); pred != pred_end(B); ++pred) {
       BasicBlock *predBB = *pred;
@@ -114,7 +158,7 @@ struct DumpModulePass : public ModulePass {
     }
   }
 
-// global values
+  // global values
   void printGlobalValues(Module &M) {
     WITH_COLOR(raw_ostream::RED, errs() << "\n===> global variables:";);
     auto &gvarList = M.getGlobalList();
@@ -122,7 +166,7 @@ struct DumpModulePass : public ModulePass {
       errs() << " empty\n";
     } else {
       errs() << "\n";
-      for (auto &gVar: gvarList) {
+      for (auto &gVar : gvarList) {
         errs() << gVar << "\ttype:" << ToString(gVar.getType()) << "\n";
         dumpGVInfo(gVar);
       }
@@ -132,7 +176,7 @@ struct DumpModulePass : public ModulePass {
     if (aliasList.empty()) {
       errs() << " empty\n";
     } else {
-      for (auto &gAlias: aliasList) {
+      for (auto &gAlias : aliasList) {
         errs() << gAlias << " base:" << *gAlias.getBaseObject() << "\n";
         dumpGVInfo(gAlias);
       }
@@ -142,7 +186,7 @@ struct DumpModulePass : public ModulePass {
     if (ifuncs.empty()) {
       errs() << " empty\n";
     } else {
-      for (auto &ifunc: ifuncs) {
+      for (auto &ifunc : ifuncs) {
         errs() << ifunc << "\n";
         dumpGVInfo(ifunc);
       }
@@ -151,13 +195,14 @@ struct DumpModulePass : public ModulePass {
 
   void printNMetadata(Module &M) {
     WITH_COLOR(raw_ostream::MAGENTA, errs() << "\n===> NMetadate:";);
-    for (auto &nmd:M.getNamedMDList()) {
+    for (auto &nmd : M.getNamedMDList()) {
       errs() << ToString(&nmd);
       for (unsigned i = 0, e = nmd.getNumOperands(); i != e; ++i) {
         auto *Op = nmd.getOperand(i);
         if (auto *mdNode = dyn_cast<MDNode>(Op)) {
           errs() << "  Has MDNode operand:  " << *mdNode;
-          for (auto UI = mdNode->op_begin(), UE = mdNode->op_end(); UI != UE; ++UI) {
+          for (auto UI = mdNode->op_begin(), UE = mdNode->op_end(); UI != UE;
+               ++UI) {
             errs() << "   the operand has a user:\n    ";
             errs() << **UI << "\n";
           }
@@ -167,10 +212,11 @@ struct DumpModulePass : public ModulePass {
   }
 
   bool runOnFunc(Function &F, DataLayout const &layout) {
-    WITH_COLOR(raw_ostream::RED, errs() << "\n===> FUNC: " << F.getName() << "\n";);
+    WITH_COLOR(raw_ostream::RED,
+               errs() << "\n===> FUNC: " << F.getName() << "\n";);
     _dumpFnTy(F);
     dumpGVInfo(F);
-    for (auto &B: F) {
+    for (auto &B : F) {
       runOnBasicBlock(B, layout);
     }
     return false;
@@ -178,7 +224,7 @@ struct DumpModulePass : public ModulePass {
 
   bool runOnModule(Module &M) override {
     auto &layout = M.getDataLayout();
-    for (auto &F: M) {
+    for (auto &F : M) {
       runOnFunc(F, layout);
     }
     printGlobalValues(M);

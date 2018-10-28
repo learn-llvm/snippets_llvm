@@ -10,18 +10,19 @@
 #include "llvm/IR/Module.h"
 
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
-#define INST_KIND_DUMP(err, stop, Key)          \
-  {                                             \
-    if (Key) err << InstTypeStr(#Key); \
-    {                                           \
-      if (Key && stop) {                        \
-        err << "\n";                            \
-        break;                                  \
-      }                                         \
-      if (Key && !stop) err << " <-- ";         \
-    }                                           \
+#define INST_KIND_DUMP(err, stop, Key)  \
+  {                                     \
+    if (Key) err << InstTypeStr(#Key);  \
+    {                                   \
+      if (Key && stop) {                \
+        err << "\n";                    \
+        break;                          \
+      }                                 \
+      if (Key && !stop) err << " <-- "; \
+    }                                   \
   }
 
 namespace llvm {
@@ -32,35 +33,34 @@ namespace llvm {
     break;
 
 void printValueInfo(Value const *v) {
-  errs() << "[ValueID]";
   switch (v->getValueID()) {
-  casePrint(Value::ArgumentVal);
-  casePrint(Value::BasicBlockVal);
+    casePrint(Value::ArgumentVal);
+    casePrint(Value::BasicBlockVal);
     /// Constants
-  casePrint(Value::FunctionVal);
-  casePrint(Value::GlobalAliasVal);
-  casePrint(Value::GlobalVariableVal);
-  casePrint(Value::UndefValueVal);
-  casePrint(Value::BlockAddressVal);
-  casePrint(Value::ConstantExprVal);
-  casePrint(Value::ConstantAggregateZeroVal);
-  casePrint(Value::ConstantDataArrayVal);
-  casePrint(Value::ConstantDataVectorVal);
-  casePrint(Value::ConstantIntVal);
-  casePrint(Value::ConstantFPVal);
-  casePrint(Value::ConstantArrayVal);
-  casePrint(Value::ConstantStructVal);
-  casePrint(Value::ConstantVectorVal);
-  casePrint(Value::ConstantPointerNullVal);
+    casePrint(Value::FunctionVal);
+    casePrint(Value::GlobalAliasVal);
+    casePrint(Value::GlobalVariableVal);
+    casePrint(Value::UndefValueVal);
+    casePrint(Value::BlockAddressVal);
+    casePrint(Value::ConstantExprVal);
+    casePrint(Value::ConstantAggregateZeroVal);
+    casePrint(Value::ConstantDataArrayVal);
+    casePrint(Value::ConstantDataVectorVal);
+    casePrint(Value::ConstantIntVal);
+    casePrint(Value::ConstantFPVal);
+    casePrint(Value::ConstantArrayVal);
+    casePrint(Value::ConstantStructVal);
+    casePrint(Value::ConstantVectorVal);
+    casePrint(Value::ConstantPointerNullVal);
     /// Constants end
-  casePrint(Value::InlineAsmVal);
-    /// casePrint(Value::PseudoSourceValueVal);
-    /// casePrint(Value::FixedStackPseudoSourceValueVal);
-  default: {
-    // >=InstructionVal
-    errs() << "Value::InstructionVal";
-    break;
-  }
+    casePrint(Value::InlineAsmVal);
+      /// casePrint(Value::PseudoSourceValueVal);
+      /// casePrint(Value::FixedStackPseudoSourceValueVal);
+    default: {
+      // >=InstructionVal
+      errs() << "Value::InstructionVal";
+      break;
+    }
   }
   errs() << "\n";
 }
@@ -68,23 +68,26 @@ void printValueInfo(Value const *v) {
 void printTypeInfo(Type const *type) {
   errs() << *type << "\t";
   switch (type->getTypeID()) {
-  casePrint(Type::VoidTyID);
-  casePrint(Type::FloatTyID);
-  casePrint(Type::DoubleTyID);
-  casePrint(Type::X86_FP80TyID);
-  casePrint(Type::FP128TyID);
-  casePrint(Type::PPC_FP128TyID);
-  casePrint(Type::LabelTyID);
-  casePrint(Type::MetadataTyID);
-  casePrint(Type::X86_MMXTyID);
-  casePrint(Type::IntegerTyID);
-  casePrint(Type::FunctionTyID);
-  casePrint(Type::StructTyID);
-  casePrint(Type::ArrayTyID);
-  casePrint(Type::PointerTyID);
-  casePrint(Type::VectorTyID);
-  casePrint(Type::HalfTyID);
-  default:assert(0);
+    casePrint(Type::VoidTyID);
+    casePrint(Type::FloatTyID);
+    casePrint(Type::DoubleTyID);
+    casePrint(Type::X86_FP80TyID);
+    casePrint(Type::FP128TyID);
+    casePrint(Type::PPC_FP128TyID);
+    casePrint(Type::LabelTyID);
+    casePrint(Type::MetadataTyID);
+    casePrint(Type::X86_MMXTyID);
+    casePrint(Type::IntegerTyID);
+    casePrint(Type::FunctionTyID);
+    casePrint(Type::StructTyID);
+    casePrint(Type::ArrayTyID);
+    casePrint(Type::PointerTyID);
+    casePrint(Type::VectorTyID);
+    casePrint(Type::HalfTyID);
+    default: {
+      std::string typeStr = ToString(type);
+      report_fatal_error(std::string("Not handled type") + typeStr, true);
+    }
   }
   WITH_COLOR(raw_ostream::GREEN,
              errs() << " IntOrIntVector=" << type->isIntOrIntVectorTy());
@@ -101,8 +104,8 @@ void printTypeInfo(Type const *type) {
 void printInstKind(Instruction const &I) {
   errs() << "\n" << I << "\n";
   while (true) {
-    /// INST_TYPE_DUMP(errs(), true, isa<AtomicRMWInst>(I));
-    /// INST_TYPE_DUMP(errs(), true, isa<AtomicCmpXchgInst>(I));
+    /// INST_KIND_DUMP(errs(), true, isa<AtomicRMWInst>(I));
+    /// INST_KIND_DUMP(errs(), true, isa<AtomicCmpXchgInst>(I));
     INST_KIND_DUMP(errs(), true, isa<BinaryOperator>(I));
     INST_KIND_DUMP(errs(), false, isa<CallInst>(I));
     {
@@ -124,9 +127,9 @@ void printInstKind(Instruction const &I) {
             INST_KIND_DUMP(errs(), true, isa<MemTransferInst>(I));
             INST_KIND_DUMP(errs(), true, isa<MemCpyInst>(I));
           }
-          /// INST_TYPE_DUMP(errs(),true, isa<VACopyInst>(I));
-          /// INST_TYPE_DUMP(errs(),true, isa<VAEndInst>(I));
-          /// INST_TYPE_DUMP(errs(),true, isa<VAStartInst>(I));
+          INST_KIND_DUMP(errs(), true, isa<VACopyInst>(I));
+          INST_KIND_DUMP(errs(), true, isa<VAEndInst>(I));
+          INST_KIND_DUMP(errs(), true, isa<VAStartInst>(I));
         }
         errs() << "[Simple CallInst]\n";
         break;
@@ -138,10 +141,10 @@ void printInstKind(Instruction const &I) {
       INST_KIND_DUMP(errs(), true, isa<FCmpInst>(I));
     }
     INST_KIND_DUMP(errs(), true, isa<ExtractElementInst>(I));
-    /// INST_TYPE_DUMP(errs(), true, isa<FenceInst>(I));
+    /// INST_KIND_DUMP(errs(), true, isa<FenceInst>(I));
     INST_KIND_DUMP(errs(), true, isa<GetElementPtrInst>(I));
     INST_KIND_DUMP(errs(), true, isa<InsertValueInst>(I));
-    /// INST_TYPE_DUMP(errs(), true, isa<LandingPadInst>(I));
+    /// INST_KIND_DUMP(errs(), true, isa<LandingPadInst>(I));
     INST_KIND_DUMP(errs(), true, isa<PHINode>(I));
     INST_KIND_DUMP(errs(), true, isa<SelectInst>(I));
     INST_KIND_DUMP(errs(), true, isa<ShuffleVectorInst>(I));
@@ -151,7 +154,7 @@ void printInstKind(Instruction const &I) {
       INST_KIND_DUMP(errs(), true, isa<BranchInst>(I));
       INST_KIND_DUMP(errs(), true, isa<IndirectBrInst>(I));
       INST_KIND_DUMP(errs(), true, isa<InvokeInst>(I));
-      /// INST_TYPE_DUMP(errs(), true, isa<ResumeInst>(I));
+      /// INST_KIND_DUMP(errs(), true, isa<ResumeInst>(I));
       INST_KIND_DUMP(errs(), true, isa<ReturnInst>(I));
       INST_KIND_DUMP(errs(), true, isa<SwitchInst>(I));
       INST_KIND_DUMP(errs(), true, isa<UnreachableInst>(I));
@@ -194,11 +197,10 @@ std::string InstTypeStr(char const *instTypeChars) {
 
 void prettyPrint(Value const *V, unsigned endLine, unsigned startLine) {
   if (V == nullptr) {
-//    errs() << "NULL value\n";
+    //    errs() << "NULL value\n";
     return;
   }
-  while (startLine--)
-    errs() << "\n";
+  while (startLine--) errs() << "\n";
   if (isa<GlobalVariable>(V)) {
     endLine++;
     WITH_COLOR(raw_ostream::RED, errs() << "[GV]" << V->getName() << " ");
@@ -227,8 +229,7 @@ void prettyPrint(Value const *V, unsigned endLine, unsigned startLine) {
     WITH_COLOR(raw_ostream::RED, errs() << *V << "\n");
   }
 
-  while (endLine--)
-    errs() << "\n";
+  while (endLine--) errs() << "\n";
 }
 
 void dumpLinkageType(GlobalValue &GV) {
@@ -236,12 +237,13 @@ void dumpLinkageType(GlobalValue &GV) {
 #define dumpLTYInfo(key, lty) \
   errs() << #key << "=" << GlobalValue::is##key(lty) << "; "
 
-#define LIST                                                      \
-  X(ExternalLinkage)                                              \
-  X(AvailableExternallyLinkage) X(LinkOnceLinkage) X(WeakLinkage) \
-      X(AppendingLinkage) X(InternalLinkage) X(PrivateLinkage)    \
-          X(PrivateLinkage) X(LocalLinkage) X(ExternalLinkage)    \
-              X(CommonLinkage) X(DiscardableIfUnused) X(WeakForLinker)
+#define LIST                                                                \
+  X(ExternalLinkage)                                                        \
+  X(AvailableExternallyLinkage)                                             \
+  X(LinkOnceLinkage)                                                        \
+  X(WeakLinkage) X(AppendingLinkage) X(InternalLinkage) X(PrivateLinkage)   \
+      X(PrivateLinkage) X(LocalLinkage) X(ExternalLinkage) X(CommonLinkage) \
+          X(DiscardableIfUnused) X(WeakForLinker)
 
 #define X(name) dumpLTYInfo(name, lty);
   LIST;
@@ -257,20 +259,27 @@ void dumpGVInfo(GlobalValue &GV) {
 void dumpPassKind(PassKind kind) {
   std::string kindStr;
   switch (kind) {
-  case PT_BasicBlock:kindStr = "bb";
-    break;
-  case PT_Region:kindStr = "region";
-    break;
-  case PT_Loop:kindStr = "loop";
-    break;
-  case PT_Function:kindStr = "func";
-    break;
-  case PT_CallGraphSCC:kindStr = "cgscc";
-    break;
-  case PT_Module:kindStr = "module";
-    break;
-  case PT_PassManager:kindStr = "pm";
-    break;
+    case PT_BasicBlock:
+      kindStr = "bb";
+      break;
+    case PT_Region:
+      kindStr = "region";
+      break;
+    case PT_Loop:
+      kindStr = "loop";
+      break;
+    case PT_Function:
+      kindStr = "func";
+      break;
+    case PT_CallGraphSCC:
+      kindStr = "cgscc";
+      break;
+    case PT_Module:
+      kindStr = "module";
+      break;
+    case PT_PassManager:
+      kindStr = "pm";
+      break;
   }
   errs() << "passKind: " << kindStr << "\n";
 }

@@ -1,18 +1,19 @@
-#include <llvm/ADT/ArrayRef.h>
-#include <llvm/ADT/Hashing.h>
-#include <llvm/ADT/PackedVector.h>
-#include <llvm/ADT/StringRef.h>
-#include <llvm/ADT/StringSwitch.h>
-#include <llvm/ADT/Twine.h>
-#include <llvm/ADT/STLExtras.h>
-#include <llvm/Support/Format.h>
-#include <llvm/Support/raw_ostream.h>
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/Hashing.h"
+#include "llvm/ADT/PackedVector.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSwitch.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Support/Format.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <algorithm>
 #include <iostream>
 
-#include "Shape.hh"
 #include "Person.hh"
+#include "Shape.hh"
+
 using namespace llvm;
 
 /// {
@@ -28,8 +29,7 @@ int test_yaml() {
 }
 /// }
 
-
-template<typename Callable>
+template <typename Callable>
 void takeCallBack(Callable callback, bool verbose) {
   callback(verbose);
 }
@@ -51,8 +51,7 @@ int test_rtti(void) {
   shapes.push_back(square);
   shapes.push_back(circle);
   for (Shape *ele : shapes) {
-    if (ele == nullptr)
-      continue;
+    if (ele == nullptr) continue;
     if (Square *s = dyn_cast<Square>(ele)) {
       std::cout << *s << std::endl;
     } else if (Circle *c = dyn_cast<Circle>(ele)) {
@@ -119,23 +118,23 @@ void test_ArrayRef() {
 }
 
 void test_StringSwitch() {
-  std::vector<StringRef> strs{"hello", "World", "nihao", "!",
-                              "jiejie", "how", "none"};
+  std::vector<StringRef> strs{"hello",  "World", "nihao", "!",
+                              "jiejie", "how",   "none"};
   for (auto str : strs) {
     int si = StringSwitch<int>(str)
-        .Case("hello", 1)
-        .Case("World", 2)
-        .Cases("nihao", "shijie", "!", 3)
-        .EndsWith("jie", 4)
-        .StartsWith("h", 5)
-        .Default(0);
+                 .Case("hello", 1)
+                 .Case("World", 2)
+                 .Cases("nihao", "shijie", "!", 3)
+                 .EndsWith("jie", 4)
+                 .StartsWith("h", 5)
+                 .Default(0);
     errs() << format("%-10s %d\n", str.data(), si);
   }
 }
 
 int main() {
   test_StringRef();
-//  takeCallBack(test_Twine, true);
+  //  takeCallBack(test_Twine, true);
   test_ArrayRef();
   test_StringSwitch();
   test_PackedVector();

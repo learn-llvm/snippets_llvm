@@ -33,6 +33,14 @@ namespace llvm {
 void printTypeInfo(Type const *type);
 void printValueInfo(Value const *);
 
+template<typename T>
+static std::string ToString(const T *obj) {
+  std::string TypeName;
+  raw_string_ostream N(TypeName);
+  obj->print(N);
+  return N.str();
+}
+
 std::string InstTypeStr(char const *instTypeChars);
 
 void dumpLinkageType(GlobalValue &GV);

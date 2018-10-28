@@ -1,10 +1,10 @@
-set(SUB_PROJECTS
+set(TOOL_PROJS
         misc
         gen
         dump
         )
 
 
-foreach (MODULE ${SUB_PROJECTS})
+foreach (MODULE ${TOOL_PROJS})
     add_subdirectory(${MODULE})
 endforeach ()

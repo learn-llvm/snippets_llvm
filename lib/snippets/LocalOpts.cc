@@ -139,8 +139,7 @@ struct LocalOpts : public FunctionPass {
       case Instruction::Xor:
         return ConstantInt::get(left->getContext(),
                                 left->getValue() ^ right->getValue());
-      default:
-        assert(0 && "not implemented");
+      default: { report_fatal_error("not implemented"); }
     }
     return nullptr;
   }
@@ -183,19 +182,20 @@ struct LocalOpts : public FunctionPass {
       case Instruction::AShr:
       case Instruction::And:
       case Instruction::Or:
-      case Instruction::Xor:
+      case Instruction::Xor: {
         return evalBinaryIntOp(op, cast<ConstantInt>(left),
                                cast<ConstantInt>(right));
+      }
       case Instruction::FAdd:
       case Instruction::FSub:
       case Instruction::FMul:
       case Instruction::FDiv:
-      case Instruction::FRem:
+      case Instruction::FRem: {
         return evalBinaryFloatOp(op, cast<ConstantFP>(left),
                                  cast<ConstantFP>(right));
-        return left;
+      }
+      default: { report_fatal_error("not implemented"); }
     }
-    assert(0 && "not implemented");
     return nullptr;
   }
 

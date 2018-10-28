@@ -13,13 +13,13 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
-#include "LLUtils.hh"
 #include "LLDump.hh"
+#include "LLUtils.hh"
 
 namespace llvm {
 class PrepareFunc : public ModulePass {
-  Function const *assertFail{};
-  Function *main{};
+  Function const *assertFail = nullptr;
+  Function *main = nullptr;
 
   bool POSIXizeMain(Module &M) {
     main = M.getFunction("main");
@@ -58,33 +58,12 @@ class PrepareFunc : public ModulePass {
   bool runOnModule(Module &M) override {
     bool changed = POSIXizeMain(M);
     assertFail = M.getFunction("__assert_fail");
-    if (!assertFail) return false;
+    if (!assertFail) {
+      return false;
+    }
     assert(assertFail->hasFnAttribute(Attribute::NoReturn) &&
            assertFail->hasFnAttribute(Attribute::NoUnwind));
-    for (Function &F : M) {
-      if (F.isDeclaration()) continue;
-      changed |= runOnFunction(F);
-    }
     return changed;
-  }
-
-  bool runOnFunction(Function &F) {
-    bool isNeeded = false;
-    for (auto &B : F) {
-      for (auto &I : B) {
-        if (isa<CallInst>(&I) && !isa<IntrinsicInst>(&I)) {
-          auto &callInst = cast<CallInst>(I);
-          auto *calledFunc = callInst.getCalledFunction();
-          if (calledFunc == assertFail) {
-            auto &branchInst =
-                cast<BranchInst>(callInst.getParent()->getPrevNode()->back());
-            assert(branchInst.isConditional());
-            isNeeded = true;
-          }
-        }
-      }
-    }
-    return isNeeded;
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {

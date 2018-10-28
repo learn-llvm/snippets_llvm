@@ -23,8 +23,8 @@
 
 #include "llvm/IR/DataLayout.h"
 
-#include "LLUtils.hh"
 #include "LLDump.hh"
+#include "LLUtils.hh"
 
 using namespace llvm;
 
@@ -34,8 +34,7 @@ namespace detail {
 uint64_t getTypeSize(DataLayout const &targetData, Type *type) {
   if (type->isFunctionTy())  // not sized
     return targetData.getPointerSize();
-  if (!type->isSized())
-    return 100;  // FIXME hard code
+  if (!type->isSized()) return 100;  // FIXME hard code
   if (auto *structType = dyn_cast<StructType>(type))
     return targetData.getStructLayout(structType)->getSizeInBytes();
   return targetData.getTypeAllocSize(type);
@@ -74,12 +73,11 @@ bool isPointerManipulation(Instruction const *I) {
     return false;
   } else if (isa<LoadInst>(I)) {  /// PointerOperand's element type
     if (dyn_cast<PointerType const>(I->getOperand(0)->getType())
-        ->getElementType()
-        ->isPointerTy())
+            ->getElementType()
+            ->isPointerTy())
       return true;
   } else if (isa<StoreInst>(I)) {  /// ValueOperand type
-    if (I->getOperand(0)->getType()->isPointerTy())
-      return true;
+    if (I->getOperand(0)->getType()->isPointerTy()) return true;
   } else if (isa<BitCastInst>(I)) {  /// ty may vary, bits preserve
     if (I->getType()->isPointerTy() &&
         I->getOperand(0)->getType()->isPointerTy())
@@ -87,8 +85,7 @@ bool isPointerManipulation(Instruction const *I) {
   } else if (isa<GetElementPtrInst>(I)) {  /// REVIEW always true?
     return true;
   } else if (auto const *C = dyn_cast<CallInst>(I)) {
-    if (C->isInlineAsm())
-      return false;
+    if (C->isInlineAsm()) return false;
     return isFn_mem_ops(C->getCalledFunction());
   } else if (auto const *PHI = dyn_cast<PHINode>(I)) {
     return isPointerValue(PHI);
@@ -99,8 +96,7 @@ bool isPointerManipulation(Instruction const *I) {
   } else if (isa<IntToPtrInst>(I)) {  /// inttoptr
     return true;
   } else if (auto const *SEL = dyn_cast<SelectInst>(I)) {
-    if (isPointerValue(SEL))
-      return true;
+    if (isPointerValue(SEL)) return true;
   }
 
   if (isPointerValue(I)) {
@@ -112,8 +108,7 @@ bool isPointerManipulation(Instruction const *I) {
 
 Type const *getPointedType(Value const *V) {
   const Type *ty = getPointedType(V->getType());
-  if (isTrivialPointer(V))
-    ty = getPointedType(ty);
+  if (isTrivialPointer(V)) ty = getPointedType(ty);
   return ty;
 }
 
@@ -123,8 +118,7 @@ Type const *getPointedType(Type const *T) {
 
 /// REVIEW possibably wrong
 bool isGlobalPointerInit(GlobalVariable const *G) {
-  if (G->isDeclaration())
-    return false;
+  if (G->isDeclaration()) return false;
   Value const *op = G->getOperand(0);
   /// TODO this assert is only for debug use
   if (isa<Function>(G)) {
@@ -171,10 +165,9 @@ bool isFn_memset(Function const *F) {
 }
 
 bool isFn_mem_ops(Function const *F) {
-  if (!F)
-    return false;
+  if (!F) return false;
   return isFn_malloc(F) || isFn_free(F) || isFn_memcpy(F) || isFn_memmove(F) ||
-      isFn_memset(F);
+         isFn_memset(F);
 }
 
 bool is_inlineAsm_withSideEffect(CallInst const *C) {
@@ -199,8 +192,7 @@ bool isLocalToFunction(Value const *V, Function const *F) {
 }
 
 bool callToVoidFunction(CallInst const *C) {
-  if (C->isInlineAsm())
-    return false;  /// exclude inlineAsm
+  if (C->isInlineAsm()) return false;  /// exclude inlineAsm
   return C->getType()->getTypeID() == Type::VoidTyID;
 }
 
@@ -221,10 +213,9 @@ Instruction const *getPredInBlock(Instruction const *I) {
 /// GEP,CAST ConstantExpr needs to use its first operand
 Value *elimConstExpr(Value *V) {
   if (auto *CE = dyn_cast<ConstantExpr>(V)) {
-    if (Instruction::isBinaryOp(CE->getOpcode()))
-      return V;  /// itself
+    if (Instruction::isBinaryOp(CE->getOpcode())) return V;  /// itself
     assert((CE->getOpcode() == Instruction::GetElementPtr || CE->isCast()) &&
-        "Only GEP or CAST supported");
+           "Only GEP or CAST supported");
     return elimConstExpr(CE->getOperand(0));
   }
   return V;  /// don't change if not ConstantExpr
@@ -286,8 +277,8 @@ Constant *geti8StrVal(Module &M, char const *str, Twine const &name) {
 
 Function *getFn_exit(Module &M) {
   auto exitAttr = AttributeList()
-      .addAttribute(M.getContext(), ~0U, Attribute::NoReturn)
-      .addAttribute(M.getContext(), ~0U, Attribute::NoUnwind);
+                      .addAttribute(M.getContext(), ~0U, Attribute::NoReturn)
+                      .addAttribute(M.getContext(), ~0U, Attribute::NoUnwind);
   auto *exitFn = cast<Function>(M.getOrInsertFunction(
       "exit", TypeBuilder<void(int), false>::get(M.getContext()), exitAttr));
   return exitFn;

@@ -4,5 +4,4 @@
 compile_commands.json
 *.bc
 cmake-build-debug/
-.idea/
 BUILD/

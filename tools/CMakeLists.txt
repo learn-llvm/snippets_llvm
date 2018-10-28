@@ -1,9 +1,7 @@
 set(SUB_PROJECTS
-        DS
-        hello_ir
-        rtti
-        simple
-        yaml
+        misc
+        gen
+        dump
         )
 
 

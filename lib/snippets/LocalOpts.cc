@@ -1,14 +1,14 @@
 #include "llvm/Pass.h"
 
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
 
+#include <cassert>
+#include <ostream>
 #include "llvm/ADT/APFloat.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
-#include <cassert>
-#include <ostream>
 
 using namespace llvm;
 
@@ -529,4 +529,4 @@ struct LocalOpts : public FunctionPass {
 
 char LocalOpts::ID = 0;
 static RegisterPass<LocalOpts> x("LocalOpts", "LocalOpts", false, false);
-}
+}  // namespace

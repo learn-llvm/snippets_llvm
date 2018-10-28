@@ -4,10 +4,10 @@
 #include "llvm/Function.h"
 #include "llvm/Instructions.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/InstVisitor.h"
+#include "llvm/Support/raw_ostream.h"
 
-#include "Logging.hh"
+#include "LLDump.hh"
 
 using namespace llvm;
 
@@ -33,7 +33,7 @@ struct InstVisitTest final : public FunctionPass {
 
   void getAnalysisUsage(AnalysisUsage &AU) const { AU.setPreservesAll(); }
 };
-}
+}  // namespace
 
 char InstVisitTest::ID = 0;
 static RegisterPass<InstVisitTest> X("InstVisitTest", "InstVisitTest pass",

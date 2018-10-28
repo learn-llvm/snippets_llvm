@@ -3,14 +3,14 @@
 
 #include "llvm/IR/Function.h"
 
+#include "llvm/Analysis/DominanceFrontier.h"
+#include "llvm/Analysis/PostDominators.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Analysis/PostDominators.h"
-#include "llvm/Analysis/DominanceFrontier.h"
-#include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/IntrinsicInst.h"
 
-#include "Logging.hh"
+#include "LLDump.hh"
 
 using namespace llvm;
 
@@ -24,7 +24,7 @@ struct TestOF final : public FunctionPass {
         printInstArgType(I);
         if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
           errs() << "inst: " << *II << "\n";
-          logging::printTypeInfo(II->getType());
+          printTypeInfo(II->getType());
         }
       }
     }
@@ -36,13 +36,13 @@ struct TestOF final : public FunctionPass {
     if (instTy->isPointerTy()) {
       instTy = dyn_cast<PointerType>(instTy)->getElementType();
     }
-    logging::printTypeInfo(instTy);
+    printTypeInfo(instTy);
     for (auto &arg : I.operands()) {
       Type *ty = arg->getType();
       if (ty->isPointerTy()) {
         ty = dyn_cast<PointerType>(ty)->getElementType();
       }
-      logging::printTypeInfo(ty);
+      printTypeInfo(ty);
     }
   }
 

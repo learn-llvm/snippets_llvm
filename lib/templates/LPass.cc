@@ -6,7 +6,6 @@ using namespace llvm;
 namespace llvm {
 class LPass : public LoopPass {
  private:
-
  public:
   static char ID;
   LPass() : LoopPass(ID) {}
@@ -24,7 +23,7 @@ class LPass : public LoopPass {
     return false;
   }
 };
-}
+}  // namespace llvm
 
 char LPass::ID = 0;
 static RegisterPass<LPass> X("LPass", "LPass pass", true, true);

@@ -3,19 +3,19 @@
 
 #include "Version.hh"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
-#include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 #else
-#include "llvm/Function.h"
 #include "llvm/BasicBlock.h"
+#include "llvm/Function.h"
 #include "llvm/Instructions.h"
 #endif
 
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "Logging.hh"
+#include "LLDump.hh"
 
 using namespace llvm;
 

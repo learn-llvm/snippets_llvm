@@ -73,8 +73,8 @@ bool isPointerManipulation(Instruction const *I) {
     return false;
   } else if (isa<LoadInst>(I)) {  /// PointerOperand's element type
     if (dyn_cast<PointerType const>(I->getOperand(0)->getType())
-            ->getElementType()
-            ->isPointerTy())
+        ->getElementType()
+        ->isPointerTy())
       return true;
   } else if (isa<StoreInst>(I)) {  /// ValueOperand type
     if (I->getOperand(0)->getType()->isPointerTy()) return true;
@@ -167,7 +167,7 @@ bool isFn_memset(Function const *F) {
 bool isFn_mem_ops(Function const *F) {
   if (!F) return false;
   return isFn_malloc(F) || isFn_free(F) || isFn_memcpy(F) || isFn_memmove(F) ||
-         isFn_memset(F);
+      isFn_memset(F);
 }
 
 bool is_inlineAsm_withSideEffect(CallInst const *C) {
@@ -215,7 +215,7 @@ Value *elimConstExpr(Value *V) {
   if (auto *CE = dyn_cast<ConstantExpr>(V)) {
     if (Instruction::isBinaryOp(CE->getOpcode())) return V;  /// itself
     assert((CE->getOpcode() == Instruction::GetElementPtr || CE->isCast()) &&
-           "Only GEP or CAST supported");
+        "Only GEP or CAST supported");
     return elimConstExpr(CE->getOperand(0));
   }
   return V;  /// don't change if not ConstantExpr
@@ -277,8 +277,8 @@ Constant *geti8StrVal(Module &M, char const *str, Twine const &name) {
 
 Function *getFn_exit(Module &M) {
   auto exitAttr = AttributeList()
-                      .addAttribute(M.getContext(), ~0U, Attribute::NoReturn)
-                      .addAttribute(M.getContext(), ~0U, Attribute::NoUnwind);
+      .addAttribute(M.getContext(), ~0U, Attribute::NoReturn)
+      .addAttribute(M.getContext(), ~0U, Attribute::NoUnwind);
   auto *exitFn = cast<Function>(M.getOrInsertFunction(
       "exit", TypeBuilder<void(int), false>::get(M.getContext()), exitAttr));
   return exitFn;
@@ -323,7 +323,7 @@ void sym_Vars(Value *sym_addr, BasicBlock *parent, BasicBlock::iterator BI,
       ConstantInt::get(uintType, detail::getTypeSize(targetData, eleTy));
   Value *sym_name = utils::geti8StrVal(*module, sym_addr->getName().data());
   Function *kleeMakeSymbolicFn = utils::getFn_kleeMakeSymbolic(*module);
-  auto callArgs = std::vector<Value *>{sym_addr, sym_size, sym_name};
+  auto callArgs = ArrayRef<Value *>{sym_addr, sym_size, sym_name};
   builder.CreateCall(kleeMakeSymbolicFn, callArgs);
 }
 

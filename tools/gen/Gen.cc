@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
   builder.CreateCondBr(cmpResult, br_true, br_false);
 
   builder.SetInsertPoint(br_false);
-  auto args = std::vector<Value *>{utils::geti8StrVal(*module, "%d\n"), add};
+  auto args = ArrayRef<Value *>{utils::geti8StrVal(*module, "%d\n"), add};
   builder.CreateCall(printf_func, args);
 
   SmallVector<Value *, 4> assertArgs;
@@ -134,23 +134,10 @@ int main(int argc, char **argv) {
 
   // Execute the program
 
-  // do this, or ExecutionEngine::create() returns null.
-  // dependent on the 'jit' config setting in llvm-config.h
-
   verifyModule(*module);
   outs() << *module;
-  //
-  //    EngineBuilder engineBuilder(std::move(module));
-  //    ExecutionEngine *EE = EngineBuilder(module).create();
-  //    /// ExecutionEngine *EE = engineBuilder.create();
-  //    /// EE->addModule(module.get());
-  //    std::vector<GenericValue> foo_actual_args(2);
-  //    /// std::vector<GenericValue> foo_actual_args;
-  //    foo_actual_args[0].IntVal = APInt(32, argc);
-  //    /// errs() << "==========================\n";
-  //    GenericValue gv = EE->runFunction(main_fn, foo_actual_args);
-  //    errs() << "exit code = " << gv.IntVal << "\n";
-  //    delete EE;
+
+  // TODO add a JIT
   llvm_shutdown();
 
   return 0;

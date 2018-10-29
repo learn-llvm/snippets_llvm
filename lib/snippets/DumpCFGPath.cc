@@ -5,7 +5,7 @@
 
 #include "llvm/IR/CFG.h"
 
-#include <map>
+#include <set>
 
 using namespace llvm;
 
@@ -14,18 +14,22 @@ namespace llvm {
 class DumpCFGPath : public FunctionPass {
  public:
   static char ID;
-  typedef std::map<BasicBlock *, bool> BBVisitInfo;
+  typedef std::set<BasicBlock *> BBVisitInfo;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesAll();
+  }
 
   DumpCFGPath() : FunctionPass(ID) {}
 
   bool hasPath(BasicBlock *bb1, BasicBlock *bb2, BBVisitInfo visited) {
-    visited.insert(BBVisitInfo::value_type(bb1, true));
+    visited.insert(bb1);
     bool reachable = false;
     if (bb1 == bb2) {
       return true;
     }
     for (succ_iterator pi = succ_begin(bb1); pi != succ_end(bb1); pi++) {
-      if (visited.find(*pi) == visited.end() || visited[*pi] == false) {
+      if (visited.find(*pi) == visited.end()) {
         reachable = hasPath(*pi, bb2, visited);
         if (reachable) {
           return true;
@@ -36,6 +40,7 @@ class DumpCFGPath : public FunctionPass {
   }
 
   void traversePath(Function &F) {
+    errs() << "Func: " << F.getName() << "\n";
     BBVisitInfo visited;
     for (auto &B1 : F) {
       errs() << B1.getName() << ": ";
@@ -57,6 +62,6 @@ class DumpCFGPath : public FunctionPass {
 };  /// class llvm::PrintCFGPath
 
 char DumpCFGPath::ID = 0;
-static RegisterPass<DumpCFGPath> X("DumpCFGPath", "DumpCFGPath", true, true);
+static RegisterPass<DumpCFGPath> X("cfg-path", "DumpCFGPath", true, true);
 
 }  // namespace llvm

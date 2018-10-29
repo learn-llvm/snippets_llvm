@@ -18,7 +18,6 @@
 
 namespace llvm {
 class PrepareFunc : public ModulePass {
-  Function const *assertFail = nullptr;
   Function *main = nullptr;
 
   bool POSIXizeMain(Module &M) {
@@ -28,7 +27,7 @@ class PrepareFunc : public ModulePass {
       return false;
     }
     if (main->arg_size() == 2) {
-      errs() << "arg_size == 2\n";
+      errs() << "arg_size == 2, nothing to do\n";
       FunctionType const *ft = main->getFunctionType();
       Type const *argc = ft->getParamType(0);
       assert(argc->getTypeID() == Type::IntegerTyID);
@@ -37,17 +36,18 @@ class PrepareFunc : public ModulePass {
       assert(argv_e->getElementType()->isIntegerTy());
       assert(cast<IntegerType>(argv_e->getElementType())->getBitWidth() == 8);
       return false;
+    } else {
+      assert(main->arg_size() == 0);
+      main->setName("old_main");
+      FunctionType *mainTy =
+          TypeBuilder<int(int, char **), false>::get(M.getContext());
+      auto *newMain = Function::Create(mainTy, main->getLinkage(), "main", &M);
+      newMain->setAttributes(main->getAttributes());
+      newMain->getBasicBlockList().splice(newMain->begin(),
+                                          main->getBasicBlockList());
+      main->eraseFromParent();
+      return true;
     }
-    assert(main->arg_size() == 0);
-    main->setName("old_main");
-    FunctionType *mainTy =
-        TypeBuilder<int(int, char **), false>::get(M.getContext());
-    auto *newMain = Function::Create(mainTy, main->getLinkage(), "main", &M);
-    newMain->setAttributes(main->getAttributes());
-    newMain->getBasicBlockList().splice(newMain->begin(),
-                                        main->getBasicBlockList());
-    main->eraseFromParent();
-    return true;
   }
 
  public:
@@ -56,14 +56,9 @@ class PrepareFunc : public ModulePass {
   PrepareFunc() : ModulePass(ID) {}
 
   bool runOnModule(Module &M) override {
-    bool changed = POSIXizeMain(M);
-    assertFail = M.getFunction("__assert_fail");
-    if (!assertFail) {
-      return false;
-    }
-    assert(assertFail->hasFnAttribute(Attribute::NoReturn) &&
-           assertFail->hasFnAttribute(Attribute::NoUnwind));
-    return changed;
+    dumpPassKind(this->getPassKind());
+    errs() << this->getPassName() << " ID:" << this->getPassID() << "\n";
+    return POSIXizeMain(M);
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
@@ -72,5 +67,5 @@ class PrepareFunc : public ModulePass {
 };
 
 char PrepareFunc::ID = 0;
-static RegisterPass<PrepareFunc> X("PrepareFunc", "PrepareFunc", false, false);
+static RegisterPass<PrepareFunc> X("posix-main", "make it a posix main", false, false);
 }  // namespace llvm

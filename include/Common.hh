@@ -16,6 +16,5 @@
 #include <cxxabi.h>  // needed for abi::__cxa_demangle
 
 std::shared_ptr<char> cppDemangle(const char *abiName);
-#define CLASS_NAME(obj) ((const char *) cppDemangle(typeid(obj).name()).get() )
 
 #endif

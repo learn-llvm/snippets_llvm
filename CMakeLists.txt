@@ -8,6 +8,7 @@ if (NOT COMMAND add_llvm_loadable_module)
     if (DEFINED ENV{LLVM_DIR})
         # We need to match the build environment for LLVM:
         set(CMAKE_CXX_STANDARD 11)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
         find_package(LLVM REQUIRED CONFIG)
 

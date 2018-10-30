@@ -5,6 +5,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/PassManager.h"
+#include <string>
 
 namespace llvm {
 class Instruction;
@@ -30,8 +31,8 @@ class Module;
 
 namespace llvm {
 
-void printTypeInfo(Type const *type);
-void printValueInfo(Value const *);
+std::string getTypeStr(Type const *type);
+std::string getValueStr(Value const *);
 
 template<typename T>
 static std::string ToString(const T *obj) {
@@ -67,16 +68,16 @@ enum RB_Diagnostics {
 
 inline void rbscope_diagnostics(RB_Diagnostics level, char const *msg) {
   switch (level) {
-  case RB_Diagnostics::LOG: WITH_COLOR(raw_ostream::CYAN, errs() << "LOG: " << msg << "\n");
-    break;
-  case RB_Diagnostics::WARN: WITH_COLOR(raw_ostream::YELLOW, errs() << "WARN: " << msg << "\n");
-    break;
-  case RB_Diagnostics::ERROR: WITH_COLOR(raw_ostream::MAGENTA, errs() << "ERROR: " << msg << "\n");
-    abort();
-    break;
-  case RB_Diagnostics::FATAL: WITH_COLOR(raw_ostream::RED, errs() << "FATAL: " << msg << "\n");
-    abort();
-    break;
+    case RB_Diagnostics::LOG: WITH_COLOR(raw_ostream::CYAN, errs() << "LOG: " << msg << "\n");
+      break;
+    case RB_Diagnostics::WARN: WITH_COLOR(raw_ostream::YELLOW, errs() << "WARN: " << msg << "\n");
+      break;
+    case RB_Diagnostics::ERROR: WITH_COLOR(raw_ostream::MAGENTA, errs() << "ERROR: " << msg << "\n");
+      abort();
+      break;
+    case RB_Diagnostics::FATAL: WITH_COLOR(raw_ostream::RED, errs() << "FATAL: " << msg << "\n");
+      abort();
+      break;
   }
 }
 

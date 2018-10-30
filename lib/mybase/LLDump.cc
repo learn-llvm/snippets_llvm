@@ -29,10 +29,9 @@ namespace llvm {
 
 #define casePrint(Key) \
   case Key:            \
-    errs() << (#Key);  \
-    break;
+    return std::string(#Key);  \
 
-void printValueInfo(Value const *v) {
+std::string getValueStr(Value const *v) {
   switch (v->getValueID()) {
     casePrint(Value::ArgumentVal);
     casePrint(Value::BasicBlockVal);
@@ -54,19 +53,16 @@ void printValueInfo(Value const *v) {
     casePrint(Value::ConstantPointerNullVal);
     /// Constants end
     casePrint(Value::InlineAsmVal);
-      /// casePrint(Value::PseudoSourceValueVal);
-      /// casePrint(Value::FixedStackPseudoSourceValueVal);
+    /// casePrint(Value::PseudoSourceValueVal);
+    /// casePrint(Value::FixedStackPseudoSourceValueVal);
     default: {
-      // >=InstructionVal
-      errs() << "Value::InstructionVal";
-      break;
+      std::string msg(std::string("unimplemented value for " + ToString(v)));
+      report_fatal_error(msg);
     }
   }
-  errs() << "\n";
 }
 
-void printTypeInfo(Type const *type) {
-  errs() << *type << "\t";
+std::string getTypeStr(Type const *type) {
   switch (type->getTypeID()) {
     casePrint(Type::VoidTyID);
     casePrint(Type::FloatTyID);
@@ -86,19 +82,9 @@ void printTypeInfo(Type const *type) {
     casePrint(Type::HalfTyID);
     default: {
       std::string typeStr = ToString(type);
-      report_fatal_error(std::string("Not handled type") + typeStr, true);
+      report_fatal_error(std::string("Not handled type: ") + typeStr, true);
     }
   }
-  WITH_COLOR(raw_ostream::GREEN,
-             errs() << " IntOrIntVector=" << type->isIntOrIntVectorTy());
-  WITH_COLOR(raw_ostream::GREEN,
-             errs() << " FPOrFPVector=" << type->isFPOrFPVectorTy());
-  /// errs() << " Abstract=" << type->isAbstract();
-  errs() << " Aggregate=" << type->isAggregateType();
-  errs() << " FirstClass=" << type->isFirstClassType();
-  errs() << " SingleValue=" << type->isSingleValueType();
-  errs() << " Sized=" << type->isSized();
-  errs() << "\n";
 }
 
 void printInstKind(Instruction const &I) {
@@ -259,26 +245,19 @@ void dumpGVInfo(GlobalValue &GV) {
 void dumpPassKind(PassKind kind) {
   std::string kindStr;
   switch (kind) {
-    case PT_BasicBlock:
-      kindStr = "bb";
+    case PT_BasicBlock:kindStr = "bb";
       break;
-    case PT_Region:
-      kindStr = "region";
+    case PT_Region:kindStr = "region";
       break;
-    case PT_Loop:
-      kindStr = "loop";
+    case PT_Loop:kindStr = "loop";
       break;
-    case PT_Function:
-      kindStr = "func";
+    case PT_Function:kindStr = "func";
       break;
-    case PT_CallGraphSCC:
-      kindStr = "cgscc";
+    case PT_CallGraphSCC:kindStr = "cgscc";
       break;
-    case PT_Module:
-      kindStr = "module";
+    case PT_Module:kindStr = "module";
       break;
-    case PT_PassManager:
-      kindStr = "pm";
+    case PT_PassManager:kindStr = "pm";
       break;
   }
   errs() << "passKind: " << kindStr << "\n";

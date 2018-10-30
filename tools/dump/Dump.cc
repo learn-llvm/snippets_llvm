@@ -32,14 +32,14 @@ struct DumpModulePass : public ModulePass {
       errs() << "POINT ";
       instTy = dyn_cast<PointerType>(instTy)->getElementType();
     }
-    printTypeInfo(instTy);
+    getTypeStr(instTy);
     for (auto &arg : I.operands()) {
       Type *ty = arg->getType();
       if (ty->isPointerTy()) {
         errs() << "POINT ";
         ty = dyn_cast<PointerType>(ty)->getElementType();
       }
-      printTypeInfo(ty);
+      getTypeStr(ty);
     }
   }
 
@@ -48,14 +48,14 @@ struct DumpModulePass : public ModulePass {
                errs() << "---> BB (in " << B.getParent()->getName()
                       << "): " << ppName(B.getName()) << "\n";);
     for (auto &inst : B) {
-      errs() << CLASS_NAME(inst) << inst << "\n";
+      errs() << "INST: " << inst << "\n";
       if (auto *allocaInst = dyn_cast<AllocaInst>(&inst)) {
         auto *allocType = allocaInst->getAllocatedType();
-        errs() << CLASS_NAME(allocaInst) << " type: " << ToString(allocType)
+        errs() << "AllocaInst type: " << ToString(allocType)
                << " allocSize=" << dataLayout.getTypeSizeInBits(allocType)
                << " bits\n";
       } else if (auto *gep = dyn_cast<GetElementPtrInst>(&inst)) {
-        errs() << CLASS_NAME(gep) << " type: " << ToString(gep->getType())
+        errs() << getValueStr(gep) << " type: " << ToString(gep->getType())
                << "\n";
         errs() << "  pointer operand: " << ToString(gep->getPointerOperand())
                << "\n";
@@ -134,21 +134,21 @@ struct DumpModulePass : public ModulePass {
 
   void _dumpFnTy(Function &F) {
     FunctionType *fnTy = F.getFunctionType();
-    printTypeInfo(fnTy);
+    getTypeStr(fnTy);
     Type *retTy = fnTy->getReturnType();
     errs() << " retType: ";
-    printTypeInfo(retTy);
+    getTypeStr(retTy);
     errs() << "ParameterTypes (" << fnTy->getNumParams() << "):\n";
     unsigned i = 0;
     for (auto *ty : fnTy->params()) {
       i++;
       errs() << " " << i << ") ";
-      printTypeInfo(ty);
+      getTypeStr(ty);
     }
   }
 
   void _dump_PHINode(PHINode *phi) {
-    errs() << CLASS_NAME(phi) << " incoming: " << phi->getNumIncomingValues()
+    errs() << getValueStr(phi) << " incoming: " << phi->getNumIncomingValues()
            << "\n";
     BasicBlock *B = phi->getParent();
     for (auto pred = pred_begin(B); pred != pred_end(B); ++pred) {

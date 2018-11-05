@@ -8,7 +8,15 @@ if (NOT COMMAND add_llvm_loadable_module)
     if (DEFINED ENV{LLVM_DIR})
         # We need to match the build environment for LLVM:
         set(CMAKE_CXX_STANDARD 11)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+#        set(CMAKE_C_COMPILER "clang")
+#        set(CMAKE_CXX_COMPILER "clang++")
+        add_compile_options(-fno-rtti)
+
+        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+            add_compile_options (-fdiagnostics-color=always)
+        elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+            add_compile_options (-fcolor-diagnostics)
+        endif ()
 
         find_package(LLVM REQUIRED CONFIG)
 

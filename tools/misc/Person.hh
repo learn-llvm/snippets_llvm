@@ -9,6 +9,7 @@
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/FormatProviders.h"
 
 using namespace llvm;
 
@@ -37,6 +38,13 @@ struct yaml::SequenceTraits<std::vector<Person>> {
       report_fatal_error("out of bound", true);
     }
     return persons[index];
+  }
+};
+
+template<>
+struct format_provider<Person> {
+  static void format(const Person &p, raw_ostream &os, StringRef style) {
+    os << "Person(name=" << p.name_ << ", age=" << p.age_ << ")";
   }
 };
 

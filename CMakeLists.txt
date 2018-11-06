@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.4.3)
 # set(CMAKE_VERBOSE_MAKEFILE 1)
 
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
+
+project(snippets_llvm)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(-fdiagnostics-color=always)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_compile_options(-fcolor-diagnostics)
+endif ()
+
 # To support both in- and out-of-source builds,
 # we check for the presence of the add_llvm_loadable_module command.
 # - if this command is not present, we are building out-of-source
@@ -8,15 +19,7 @@ if (NOT COMMAND add_llvm_loadable_module)
     if (DEFINED ENV{LLVM_DIR})
         # We need to match the build environment for LLVM:
         set(CMAKE_CXX_STANDARD 11)
-#        set(CMAKE_C_COMPILER "clang")
-#        set(CMAKE_CXX_COMPILER "clang++")
-        add_compile_options(-fno-rtti)
-
-        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-            add_compile_options (-fdiagnostics-color=always)
-        elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-            add_compile_options (-fcolor-diagnostics)
-        endif ()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
         find_package(LLVM REQUIRED CONFIG)
 

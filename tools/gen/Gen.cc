@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
   ///     ConstantInt::get(TypeBuilder<int, false>::get(ctx), __LINE__, false));
   assertArgs.push_back(add);
   assertArgs.push_back(utils::geti8StrVal(*module, __FUNCTION__));
-  Function *assertFunc = utils::getFn_assert(*module);
+  Function *assertFunc = utils::getOrInsertAssert(*module);
   /// errs() << *assertFunc;
   builder.CreateCall(assertFunc, assertArgs);
 

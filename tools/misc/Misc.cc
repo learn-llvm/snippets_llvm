@@ -11,14 +11,61 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/MD5.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/ErrorHandling.h"
+#include <iostream>
+#include <sstream>
 
 #include <algorithm>
 #include <iostream>
+#include <system_error>
 
 #include "Person.hh"
 #include "Shape.hh"
 
 using namespace llvm;
+
+llvm::Expected<int> to_int(const std::string &S, bool MatchWord = false) {
+  std::istringstream ss(S);
+  ss.imbue(std::locale::classic());
+
+  int result;
+  ss >> result;
+
+  if (LLVM_UNLIKELY(ss.fail()))
+    return llvm::createStringError(std::make_error_code(std::errc::invalid_argument),
+                                   "Failed to parse int: %s",
+                                   S.c_str());
+
+  if (LLVM_UNLIKELY(MatchWord && !ss.eof()))
+    return llvm::createStringError(std::make_error_code(std::errc::invalid_argument),
+                                   "Failed to parse full string as int: %s",
+                                   S.c_str());
+
+  return result;
+}
+
+int test_err(int argc, char *argv[]) {
+  llvm::Error Errs = llvm::Error::success();
+  auto QueueError = [&Errs](llvm::Error Err) {
+    Errs = llvm::joinErrors(std::move(Errs), std::move(Err));
+  };
+
+  std::cout << "Ints: ";
+  static constexpr bool MatchWord = true;
+
+  for (int i = 1; i < argc; i++) {
+    if (auto parsed_int = to_int(argv[i], MatchWord)) {
+      std::cout << *parsed_int << " ";
+    } else {
+      QueueError(parsed_int.takeError());
+    }
+  }
+
+  std::cout << "\n";
+  llvm::logAllUnhandledErrors(std::move(Errs), errs(), "\nErrors:\n");
+  std::cout << "\n";
+  return 0;
+}
 
 // https://modocache.io/llvm-memory-buffer
 
@@ -195,7 +242,8 @@ void test_StringSwitch() {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
+  test_err(argc, argv);
   test_md5();
   test_format();
   test_StringRef();

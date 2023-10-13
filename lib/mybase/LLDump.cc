@@ -57,7 +57,7 @@ std::string getValueStr(Value const *v) {
     /// casePrint(Value::FixedStackPseudoSourceValueVal);
     default: {
       std::string msg(std::string("unimplemented value for " + ToString(v)));
-      report_fatal_error(msg);
+      llvm::report_fatal_error(msg.data());
     }
   }
 }
@@ -78,11 +78,11 @@ std::string getTypeStr(Type const *type) {
     casePrint(Type::StructTyID);
     casePrint(Type::ArrayTyID);
     casePrint(Type::PointerTyID);
-    casePrint(Type::VectorTyID);
+    // casePrint(Type::VectorTyID);
     casePrint(Type::HalfTyID);
     default: {
       std::string typeStr = ToString(type);
-      report_fatal_error(std::string("Not handled type: ") + typeStr, true);
+      report_fatal_error(llvm::StringRef("Not handled type: ") + typeStr, true);
     }
   }
 }
@@ -135,7 +135,7 @@ void printInstKind(Instruction const &I) {
     INST_KIND_DUMP(errs(), true, isa<SelectInst>(I));
     INST_KIND_DUMP(errs(), true, isa<ShuffleVectorInst>(I));
     INST_KIND_DUMP(errs(), true, isa<StoreInst>(I));
-    INST_KIND_DUMP(errs(), false, isa<TerminatorInst>(I));
+    // INST_KIND_DUMP(errs(), false, isa<TerminatorInst>(I));
     {
       INST_KIND_DUMP(errs(), true, isa<BranchInst>(I));
       INST_KIND_DUMP(errs(), true, isa<IndirectBrInst>(I));
@@ -242,11 +242,11 @@ void dumpGVInfo(GlobalValue &GV) {
   errs() << "\n";
 }
 
-void dumpPassKind(PassKind kind) {
+void dumpPassKind(llvm::PassKind kind) {
   std::string kindStr;
   switch (kind) {
-    case PT_BasicBlock:kindStr = "bb";
-      break;
+    // case PT_BasicBlock:kindStr = "bb";
+    //   break;
     case PT_Region:kindStr = "region";
       break;
     case PT_Loop:kindStr = "loop";

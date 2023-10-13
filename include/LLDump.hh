@@ -1,6 +1,7 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Constants.h"
@@ -44,8 +45,8 @@ static std::string ToString(const T *obj) {
 
 std::string InstTypeStr(char const *instTypeChars);
 
-void dumpLinkageType(GlobalValue &GV);
-void dumpGVInfo(GlobalValue &GV);
+void dumpLinkageType(llvm::GlobalValue &GV);
+void dumpGVInfo(llvm::GlobalValue &GV);
 void dumpPassKind(PassKind kind);
 
 static inline StringRef ppName(StringRef name) {

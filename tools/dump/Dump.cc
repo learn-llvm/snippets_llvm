@@ -12,7 +12,6 @@
 
 #include "llvm/IR/CFG.h"
 
-#include "Common.hh"
 #include "LLDump.hh"
 #include "LLUtils.hh"
 
@@ -30,14 +29,14 @@ struct DumpModulePass : public ModulePass {
     Type *instTy = I.getType();
     if (instTy->isPointerTy()) {
       errs() << "POINT ";
-      instTy = dyn_cast<PointerType>(instTy)->getElementType();
+      instTy = dyn_cast<PointerType>(instTy)->getNonOpaquePointerElementType();
     }
     getTypeStr(instTy);
     for (auto &arg : I.operands()) {
       Type *ty = arg->getType();
       if (ty->isPointerTy()) {
         errs() << "POINT ";
-        ty = dyn_cast<PointerType>(ty)->getElementType();
+        ty = dyn_cast<PointerType>(ty)->getNonOpaquePointerElementType();
       }
       getTypeStr(ty);
     }
@@ -75,7 +74,7 @@ struct DumpModulePass : public ModulePass {
   }
 
   void _dump_CallInst(CallInst *callInst) {
-    Value *calledValue = callInst->getCalledValue();
+    Value *calledValue = callInst->getCalledFunction();
     if (auto *ia = dyn_cast<InlineAsm>(calledValue)) {
       _dump_InlineASM(ia);
     }
@@ -161,54 +160,12 @@ struct DumpModulePass : public ModulePass {
   // global values
   void printGlobalValues(Module &M) {
     WITH_COLOR(raw_ostream::RED, errs() << "\n===> global variables:";);
-    auto &gvarList = M.getGlobalList();
-    if (gvarList.empty()) {
-      errs() << " empty\n";
-    } else {
-      errs() << "\n";
-      for (auto &gVar : gvarList) {
-        errs() << gVar << "\ttype:" << ToString(gVar.getType()) << "\n";
-        dumpGVInfo(gVar);
-      }
-    }
     WITH_COLOR(raw_ostream::RED, errs() << "\n===> global alias:";);
-    auto &aliasList = M.getAliasList();
-    if (aliasList.empty()) {
-      errs() << " empty\n";
-    } else {
-      for (auto &gAlias : aliasList) {
-        errs() << gAlias << " base:" << *gAlias.getBaseObject() << "\n";
-        dumpGVInfo(gAlias);
-      }
-    }
     WITH_COLOR(raw_ostream::RED, errs() << "\n===> ifuncs:";);
-    auto &ifuncs = M.getIFuncList();
-    if (ifuncs.empty()) {
-      errs() << " empty\n";
-    } else {
-      for (auto &ifunc : ifuncs) {
-        errs() << ifunc << "\n";
-        dumpGVInfo(ifunc);
-      }
-    }
   }
 
   void printNMetadata(Module &M) {
     WITH_COLOR(raw_ostream::MAGENTA, errs() << "\n===> NMetadate:";);
-    for (auto &nmd : M.getNamedMDList()) {
-      errs() << ToString(&nmd);
-      for (unsigned i = 0, e = nmd.getNumOperands(); i != e; ++i) {
-        auto *Op = nmd.getOperand(i);
-        if (auto *mdNode = dyn_cast<MDNode>(Op)) {
-          errs() << "  Has MDNode operand:  " << *mdNode;
-          for (auto UI = mdNode->op_begin(), UE = mdNode->op_end(); UI != UE;
-               ++UI) {
-            errs() << "   the operand has a user:\n    ";
-            errs() << **UI << "\n";
-          }
-        }
-      }
-    }
   }
 
   bool runOnFunc(Function &F, DataLayout const &layout) {

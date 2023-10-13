@@ -1,7 +1,5 @@
 #define DEBUG_TYPE "IR"
 
-#include <vector>
-
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -14,7 +12,6 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/TypeBuilder.h"
 #include "llvm/IR/Value.h"
 
 #include "llvm/ADT/SetVector.h"
@@ -59,7 +56,7 @@ bool isConstantValue(Value const *V) {
 bool isPointerValue(Value const *V) {
   if (isTrivialPointer(V))
     return cast<PointerType const>(V->getType())
-        ->getElementType()
+        ->getNonOpaquePointerElementType()
         ->isPointerTy();
   return V->getType()->isPointerTy();
 }
@@ -74,7 +71,7 @@ bool isPointerManipulation(Instruction const *I) {
     return false;
   } else if (isa<LoadInst>(I)) {  /// PointerOperand's element type
     if (dyn_cast<PointerType const>(I->getOperand(0)->getType())
-        ->getElementType()
+        ->getNonOpaquePointerElementType()
         ->isPointerTy())
       return true;
   } else if (isa<StoreInst>(I)) {  /// ValueOperand type
@@ -118,7 +115,7 @@ Type const *getPointedType(Value const *V) {
 }
 
 Type const *getPointedType(Type const *T) {
-  return cast<PointerType>(T)->getElementType();
+  return cast<PointerType>(T)->getNonOpaquePointerElementType();
 }
 
 /// REVIEW possibably wrong
@@ -129,7 +126,7 @@ bool isGlobalPointerInit(GlobalVariable const *G) {
   /// TODO this assert is only for debug use
   if (isa<Function>(G)) {
     assert(cast<PointerType const>(op->getType())
-               ->getElementType()
+               ->getNonOpaquePointerElementType()
                ->isFunctionTy());
   }
   return isTrivialPointer(op);
@@ -138,12 +135,12 @@ bool isGlobalPointerInit(GlobalVariable const *G) {
 /// REVIEW callback is treated as usual
 FunctionType const *getCalleeFnType(CallInst const *C) {
   assert(!C->isInlineAsm() && "Inline assembly is not supported!");
-  if (auto *fn = dyn_cast<Function>(C->getCalledValue()))
+  if (auto *fn = dyn_cast<Function>(C->getCalledFunction()))
     return fn->getFunctionType();
   else {  /// function pointer
     Type const *fnT =
-        dyn_cast<PointerType const>(C->getCalledValue()->getType())
-            ->getElementType();
+        dyn_cast<PointerType const>(C->getCalledFunction()->getType())
+            ->getNonOpaquePointerElementType();
     return dyn_cast<FunctionType const>(fnT);
   }
 }
@@ -178,7 +175,7 @@ bool isFn_mem_ops(Function const *F) {
 }
 
 bool is_inlineAsm_withSideEffect(CallInst const *C) {
-  if (auto *a = dyn_cast<InlineAsm>(C->getCalledValue()))
+  if (auto *a = dyn_cast<InlineAsm>(C->getCalledFunction()))
     return a->hasSideEffects();
   return false;
 }
@@ -237,7 +234,7 @@ Value const *elimConstExpr(Value const *V) {
 /// int and int*, or their combination(array/struct), klee can deal with
 bool isIntegerRelatedType(Type const *ty) {
   if (ty->isPointerTy()) {  // int*
-    return isa<IntegerType>((cast<PointerType>(ty))->getElementType());
+    return isa<IntegerType>((cast<PointerType>(ty))->getNonOpaquePointerElementType());
   } else if (ty->isStructTy()) {  // struct with int/int* or recursively
     auto *structTy = cast<StructType>(ty);
     for (unsigned i = 0; i < structTy->getNumElements(); ++i) {
@@ -284,59 +281,7 @@ Constant *geti8StrVal(Module &M, char const *str, Twine const &name) {
 }
 
 Function *getFn_exit(Module &M) {
-  auto exitAttr = AttributeList()
-      .addAttribute(M.getContext(), ~0U, Attribute::NoReturn)
-      .addAttribute(M.getContext(), ~0U, Attribute::NoUnwind);
-  auto *exitFn = cast<Function>(M.getOrInsertFunction(
-      "exit", TypeBuilder<void(int), false>::get(M.getContext()), exitAttr));
-  return exitFn;
-}
-
-Function *getOrInsertAssert(Module &mod) {
-  FunctionType *assertType =
-      TypeBuilder<void(char *, char *, int, char *), false>::get(
-          mod.getContext());
-
-  auto assert_fail_attr =
-      AttributeList()
-          .addAttribute(mod.getContext(), ~0U, Attribute::NoReturn)
-          .addAttribute(mod.getContext(), ~0U, Attribute::NoUnwind);
-  auto *func = cast<Function>(
-      mod.getOrInsertFunction("__assert_fail", assertType, assert_fail_attr));
-  return func;
-}
-
-Function *getFn_kleeMakeSymbolic(Module &M) {
-  FunctionType *fnTy =
-      TypeBuilder<void(void *, size_t, const char *), false>::get(
-          M.getContext());
-  return cast<Function>(M.getOrInsertFunction("klee_make_symbolic", fnTy));
-}
-
-void sym_Vars(Value *sym_addr, BasicBlock *parent, BasicBlock::iterator BI,
-              IRBuilder<> &builder) {
-  Module *module = parent->getParent()->getParent();
-  LLVMContext &ctx = module->getContext();
-  PointerType const *addrType = dyn_cast<PointerType>(sym_addr->getType());
-  assert(addrType && "should be pointer type");
-  Type *voidPtrType = TypeBuilder<void *, false>::get(ctx);
-  Type *uintType = TypeBuilder<size_t, false>::get(ctx);
-  builder.SetInsertPoint(parent, BI);
-  if (addrType != voidPtrType)
-    sym_addr = builder.CreateBitCast(sym_addr, voidPtrType);
-  Type *eleTy = addrType->getElementType();
-
-  DataLayout targetData(module);
-  Value *sym_size =
-      ConstantInt::get(uintType, detail::getTypeSize(targetData, eleTy));
-  Value *sym_name = utils::geti8StrVal(*module, sym_addr->getName().data());
-  Function *kleeMakeSymbolicFn = utils::getFn_kleeMakeSymbolic(*module);
-  auto callArgs = ArrayRef<Value *>{sym_addr, sym_size, sym_name};
-  builder.CreateCall(kleeMakeSymbolicFn, callArgs);
-}
-
-void sym_Vars(Value *sym_addr, BasicBlock *parent, IRBuilder<> &builder) {
-  sym_Vars(sym_addr, parent, parent->end(), builder);
+  return nullptr;
 }
 
 }  // namespace utils

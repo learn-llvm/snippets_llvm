@@ -1,8 +1,9 @@
-/build/
-*.out
-*.o
-compile_commands.json
 *.bc
-cmake-build-debug/
+/build/
 BUILD/
+.cache/
+cmake-build-debug/
+compile_commands.json
 .idea/workspace.xml
+*.o
+*.out

@@ -1,2 +1,2 @@
 add_subdirectory(mybase)
-add_subdirectory(snippets)
+# add_subdirectory(snippets)

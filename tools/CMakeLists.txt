@@ -1,6 +1,5 @@
 set(TOOL_PROJS
-        misc
-        gen
+        # misc
         dump
         )
 

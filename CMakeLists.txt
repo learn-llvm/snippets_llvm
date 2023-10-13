@@ -31,9 +31,9 @@ if (NOT COMMAND add_llvm_loadable_module)
 
     else ()
         message(FATAL_ERROR "\
-WARNING: The LLVM_DIR var was not set (required for an out-of-source build)!\n\
-Please set this to environment variable to point to the LLVM build directory\
-(e.g. on linux: export LLVM_DIR=/path/to/llvm/build/dir)")
+        WARNING: The LLVM_DIR var was not set (required for an out-of-source build)!\n\
+        Please set this to environment variable to point to the LLVM build directory\
+        (e.g. on linux: export LLVM_DIR=/path/to/llvm/build/dir)")
     endif ()
 else ()
     set(IN_SOURCE_BUILD 1)
@@ -48,7 +48,7 @@ if (${FORCE_COLORED_OUTPUT})
 endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_BINARY_DIR}/include)
+    ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 add_subdirectory(lib)
 add_subdirectory(tools)

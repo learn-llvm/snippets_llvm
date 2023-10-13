@@ -5,6 +5,6 @@ set(TOOL_PROJS
         )
 
 
-foreach (MODULE ${TOOL_PROJS})
-    add_subdirectory(${MODULE})
+foreach (module ${TOOL_PROJS})
+    add_subdirectory(${module})
 endforeach ()

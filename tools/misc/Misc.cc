@@ -86,7 +86,7 @@ int test_yaml() {
 
 void test_format() {
   errs() << "\n\n===" << __PRETTY_FUNCTION__ << "\n";
-  Person p("Hongxu", 18);
+  Person p("hongxu", 18);
   errs() << formatv("{0}", p) << "\n";
 
 //  errs() << formatv("{0} ({1:P})", 7, 0.35) << "\n";
